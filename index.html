@@ -145,7 +145,6 @@
 <body>
     <h2>
         <span>Veresiye Takip Programı</span>
-        <span id="db_durum" class="db-badge">Bağlanıyor...</span>
     </h2>
     
     <div class="top-bar">
@@ -274,20 +273,15 @@
         let db = null;
         const isFirebaseConfigured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YENİ_");
 
-        const durumEl = document.getElementById('db_durum');
+        
         if (isFirebaseConfigured) {
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                durumEl.innerText = "Firebase Bulut Bağlı";
+                
             } catch (e) {
                 console.error("Firebase başlatılamadı:", e);
-                durumEl.innerText = "Firebase Hatası (Yerel Mod Aktif)";
-                durumEl.classList.add("warn");
             }
-        } else {
-            durumEl.innerText = "Yerel Mod (Yeni Firebase Config Bekleniyor)";
-            durumEl.classList.add("warn");
         }
 
         window.kayitlar = [];
