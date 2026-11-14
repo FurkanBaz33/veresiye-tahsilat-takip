@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veresiye Takip Programı</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; margin: 20px; background-color: #ffffff; color: #333; }
+        h2 { margin-top: 0; font-size: 18px; border-bottom: 2px solid #ccc; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .db-badge { font-size: 11px; font-weight: normal; padding: 3px 8px; border-radius: 4px; background: #eef6ff; color: #0056b3; border: 1px solid #b8daff; }
+        .db-badge.warn { background: #fff3cd; color: #856404; border-color: #ffeeba; }
+
+        .top-bar { display: flex; gap: 5px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+        .top-bar input, .top-bar select, .top-bar button { padding: 6px 8px; font-size: 13px; border: 1px solid #999; border-radius: 4px; }
+        .top-bar button { cursor: pointer; background-color: #007bff; color: white; border: none; font-weight: bold; }
+        .top-bar button:hover { background-color: #0056b3; }
+        .top-bar button.btn-update { background-color: #28a745; }
+        .top-bar button.btn-update:hover { background-color: #218838; }
+        .top-bar button.btn-cancel { background-color: #6c757d; }
+        .top-bar button.btn-cancel:hover { background-color: #5a6268; }
+        
+        /* Layout */
+        .container { display: flex; gap: 20px; align-items: flex-start; }
+        .main-content { flex: 1; overflow-x: auto; width: 100%; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; min-width: 550px; }
+        th, td { border: 1px solid #999; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; font-weight: bold; text-align: center; }
+        td { text-align: center; }
+        
+        .summary-panel { width: 290px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 4px; padding: 15px; flex-shrink: 0; }
+        .summary-panel h3 { margin-top: 0; font-size: 15px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .filter-buttons { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 15px; }
+        .filter-buttons button { padding: 4px 8px; font-size: 11px; cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 4px; }
+        .filter-buttons button.active { background: #007bff; color: white; border-color: #007bff; }
+        .summary-item { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dotted #ccc; padding-bottom: 4px; gap: 8px; }
+        .summary-item.bold { font-weight: bold; font-size: 14px; border-bottom: none; margin-top: 10px; background: #efefef; padding: 6px; border-radius: 4px; }
+        .tur-ozetleri { margin-top: 20px; }
+        .tur-ozetleri h4 { margin: 0 0 10px 0; font-size: 13px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+        .action-btn { font-size: 11px; padding: 4px 8px; cursor: pointer; display: inline-block; margin: 2px; border: 1px solid #999; background-color: #f0f0f0; border-radius: 3px; }
+        .action-btn:hover { background-color: #ddd; }
+        .action-btn.del:hover { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .text-green { color: #008000; font-weight: bold; }
+        .text-red { color: #cc0000; font-weight: bold; }
+        .text-blue { color: #0056b3; font-weight: bold; }
+        .table-filters { margin-bottom: 10px; display: flex; gap: 4px; flex-wrap: wrap; }
+        .table-filters button { padding: 4px 12px; font-size: 12px; cursor: pointer; border: 1px solid #ccc; background: #eee; border-radius: 4px; }
+        .table-filters button.active { background: #ddd; font-weight: bold; border-color: #999; }
+        
+        /* Sekme (Tabs) Stilleri */
+        .tabs { border-bottom: 1px solid #ccc; margin-bottom: 10px; display: flex; flex-wrap: wrap; }
+        .tablink { background: #f0f0f0; border: 1px solid #ccc; border-bottom: none; padding: 8px 16px; cursor: pointer; border-radius: 4px 4px 0 0; margin-right: 5px; outline: none; flex: 1; text-align: center; }
+        .tablink:hover { background: #e9e9e9; }
+        .tablink.active { background: #fff; border-top: 3px solid #007bff; font-weight: bold; color: #007bff; padding-bottom: 9px; margin-bottom: -1px; }
+        .tabcontent { display: none; animation: fadeEffect 0.3s; }
+        .tabcontent.active { display: block; }
+        @keyframes fadeEffect { from {opacity: 0;} to {opacity: 1;} }
+
+        /* Kişi Bazlı Gruplar Özel Tasarımı */
+        .kisi-arama-bar { margin-bottom: 12px; }
+        .kisi-arama-bar input { width: 100%; max-width: 320px; padding: 6px 10px; font-size: 13px; border: 1px solid #bbb; border-radius: 4px; }
+        .kisi-kategori { margin-bottom: 18px; border: 1px solid #ddd; padding: 15px; border-radius: 6px; background: #fafafa; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .kisi-kategori-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0e2ff; padding-bottom: 6px; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
+        .kisi-kategori-header h3 { margin: 0; color: #004085; font-size: 15px; }
+        .kisi-ozet-etiket { font-size: 12px; color: #555; }
+        .kisi-islem-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #ccc; font-size: 13px; gap: 10px; flex-wrap: wrap; }
+        .kisi-islem-item:last-of-type { border-bottom: none; }
+        .kisi-toplam { font-weight: bold; margin-top: 12px; text-align: right; color: #333; font-size: 13.5px; background: #eee; padding: 7px 10px; border-radius: 4px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .tarih-badge { background: #e9ecef; color: #495057; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 6px; font-weight: bold; }
+        .tip-badge { padding: 2px 7px; border-radius: 10px; font-size: 11px; margin-right: 8px; font-weight: bold; }
+        .tip-veresiye { background: #f8d7da; color: #842029; }
+        .tip-tahsilat { background: #d1e7dd; color: #0f5132; }
+
+        /* Modal Stili */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 400px; border-radius: 5px; }
+        .modal-content input { margin-bottom: 10px; width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        .modal-content button { padding: 8px 15px; cursor: pointer; border-radius: 4px; border: none; background: #007bff; color: white; margin-right: 5px; }
+
+        /* MOBİL UYUMLULUK (RESPONSIVE) */
+        @media screen and (max-width: 768px) {
+            body { margin: 10px; }
+            .container { flex-direction: column; }
+            .summary-panel { width: 100%; margin-top: 20px; }
+            .top-bar { flex-direction: column; align-items: stretch; }
+            .top-bar input, .top-bar select, .top-bar button {
+                width: 100% !important;
+                margin-bottom: 5px;
+                font-size: 14px;
+                padding: 10px;
+            }
+            .tabs { flex-direction: column; border-bottom: none; }
+            .tablink { margin-right: 0; margin-bottom: 5px; border-radius: 4px; border-bottom: 1px solid #ccc; }
+            .tablink.active { margin-bottom: 5px; border-bottom: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+    <h2>
+        <span>Veresiye Takip Programı</span>
+        <span id="db_durum" class="db-badge">Bağlanıyor...</span>
+    </h2>
+    
+    <div class="top-bar">
+        <input type="date" id="tarih">
+        <select id="islem_tipi">
+            <option value="Veresiye">Veresiye</option>
+            <option value="Tahsilat">Tahsilat</option>
+        </select>
+        <input type="text" id="isim" list="isim_listesi" placeholder="İsim (Yazdıkça tamamlar)" autocomplete="off" style="width: 200px;">
+        <datalist id="isim_listesi"></datalist>
+        <input type="text" id="aciklama" placeholder="Açıklama / Not" style="width: 240px;">
+        <input type="number" id="tutar" placeholder="Tutar (₺)" step="0.01" min="0" style="width: 110px;">
+        <button id="btn_kaydet" onclick="kaydet()">Kaydet</button>
+        <button id="btn_iptal" class="btn-cancel" onclick="duzenlemeIptal()" style="display: none;">Vazgeç</button>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            
+            <div class="tabs">
+                <button class="tablink active" onclick="openTab(event, 'TabGenel')">Genel Kayıtlar (Tablo)</button>
+                <button class="tablink" onclick="openTab(event, 'TabKisiler')">Kişi Bazlı Kayıtlar (Detaylı)</button>
+            </div>
+
+            <div id="TabGenel" class="tabcontent active">
+                <div class="table-filters">
+                    <button id="btn_hepsi" class="active" onclick="setTableFilter('Hepsi')">Tümü</button>
+                    <button id="btn_veresiye" onclick="setTableFilter('Veresiye')">Sadece Veresiyeler</button>
+                    <button id="btn_tahsilat" onclick="setTableFilter('Tahsilat')">Sadece Tahsilatlar</button>
+                </div>
+                <div style="overflow-x: auto; width: 100%;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Veresiye / Tahsilat</th>
+                                <th>İsim</th>
+                                <th>Açıklama</th>
+                                <th>Tutar (₺)</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kayit_govdesi"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="TabKisiler" class="tabcontent">
+                <p style="color: #666; font-size: 12px; margin-top: 0;">Seçili tarih aralığındaki tüm veresiye ve tahsilat hareketleri kişi isimlerine göre gruplanarak gösterilmektedir.</p>
+                <div class="kisi-arama-bar">
+                    <input type="text" id="kisi_filtre_input" oninput="render()" placeholder="Kişi ismine göre filtrele...">
+                </div>
+                <div id="kisi_gruplari_alani"></div>
+            </div>
+
+        </div>
+
+        <div class="summary-panel">
+            <h3>Özet</h3>
+            <div class="filter-buttons">
+                <button class="active" onclick="setTimeFilter('Tümü', this)">Tümü</button>
+                <button onclick="setTimeFilter('Günlük', this)">Günlük</button>
+                <button onclick="setTimeFilter('Haftalık', this)">Haftalık</button>
+                <button onclick="setTimeFilter('Aylık', this)">Aylık</button>
+                <button onclick="setTimeFilter('Yıllık', this)">Yıllık</button>
+                <button onclick="openOzelAralikModal(this)">Özel Aralık</button>
+            </div>
+            <div id="aktif_tarih_metni" style="font-size: 11px; color: #666; margin-bottom: 10px;">Tüm Zamanlar Gösteriliyor</div>
+            
+            <div class="summary-item">
+                <span>Toplam Veresiye</span>
+                <span id="toplam_veresiye" class="text-red">0,00 ₺</span>
+            </div>
+            <div class="summary-item">
+                <span>Toplam Tahsilat</span>
+                <span id="toplam_tahsilat" class="text-green">0,00 ₺</span>
+            </div>
+            <div class="summary-item bold" id="alacak_container">
+                <span>Kalan Alacak</span>
+                <span id="kalan_alacak">0,00 ₺</span>
+            </div>
+
+            <div class="tur-ozetleri">
+                <h4>Kişilere Göre Kalan Alacaklar</h4>
+                <div id="kisi_detaylari"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Özel Aralık Modalı -->
+    <div id="ozelModal" class="modal">
+      <div class="modal-content">
+        <h4>Özel Tarih Aralığı Seçin</h4>
+        <label>Başlangıç:</label>
+        <input type="date" id="ozel_baslangic">
+        <br><br>
+        <label>Bitiş:</label>
+        <input type="date" id="ozel_bitis">
+        <br><br>
+        <button onclick="applyOzelAralik()">Uygula</button>
+        <button style="background-color: #6c757d;" onclick="document.getElementById('ozelModal').style.display='none'">İptal</button>
+      </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, query } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // =========================================================================
+        // YENİ FIREBASE PROJENİZİN YAPILANDIRMA BİLGİLERİNİ AŞAĞIYA YAPIŞTIRIN
+        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "YENİ_API_KEY_BURAYA",
+            authDomain: "YENİ_PROJE_ID.firebaseapp.com",
+            projectId: "YENİ_PROJE_ID",
+            storageBucket: "YENİ_PROJE_ID.firebasestorage.app",
+            messagingSenderId: "YENİ_SENDER_ID",
+            appId: "YENİ_APP_ID"
+        };
+
+        const KOLEKSIYON_ADI = "veresiye_islemler";
+        const LOCAL_STORAGE_KEY = "veresiye_takip_yedek_v1";
+
+        let app = null;
+        let db = null;
+        const isFirebaseConfigured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YENİ_");
+
+        const durumEl = document.getElementById('db_durum');
+        if (isFirebaseConfigured) {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                durumEl.innerText = "Firebase Bulut Bağlı";
+            } catch (e) {
+                console.error("Firebase başlatılamadı:", e);
+                durumEl.innerText = "Firebase Hatası (Yerel Mod Aktif)";
+                durumEl.classList.add("warn");
+            }
+        } else {
+            durumEl.innerText = "Yerel Mod (Yeni Firebase Config Bekleniyor)";
+            durumEl.classList.add("warn");
+        }
+
+        window.kayitlar = [];
+        window.editId = null;
+        window.currentFilter = 'Hepsi'; 
+        window.currentTimeFilter = 'Tümü';
+        window.ozelStartDate = null;
+        window.ozelEndDate = null;
+        window.activeTimeBtn = null;
+
+        // Türkçe büyük/küçük harf duyarsız karşılaştırma anahtarı
+        window.normalizeNameKey = function(str) {
+            return (str || "").trim().replace(/\s+/g, ' ').toLocaleLowerCase('tr-TR');
+        };
+
+        // İsimleri düzenli baş harfli formata çevirir (Örn: "ahmet yılmaz" -> "Ahmet Yılmaz")
+        window.formatDisplayName = function(str) {
+            return (str || "").trim().replace(/\s+/g, ' ')
+                .split(' ')
+                .filter(Boolean)
+                .map(w => w.charAt(0).toLocaleUpperCase('tr-TR') + w.slice(1).toLocaleLowerCase('tr-TR'))
+                .join(' ');
+        };
+
+        // Sistemde aynı isim zaten varsa onun yazımını korur, yoksa düzenli formatlar
+        window.resolveCanonicalName = function(rawName) {
+            const key = window.normalizeNameKey(rawName);
+            const mevcut = window.kayitlar.find(k => window.normalizeNameKey(k.isim) === key);
+            return mevcut ? window.formatDisplayName(mevcut.isim) : window.formatDisplayName(rawName);
+        };
+
+        // Otomatik tamamlama listesini (datalist) günceller
+        window.updateIsimListesi = function() {
+            const datalist = document.getElementById('isim_listesi');
+            datalist.innerHTML = '';
+            const benzersizIsimler = new Map();
+
+            window.kayitlar.forEach(k => {
+                const key = window.normalizeNameKey(k.isim);
+                if (key && !benzersizIsimler.has(key)) {
+                    benzersizIsimler.set(key, window.formatDisplayName(k.isim));
+                }
+            });
+
+            Array.from(benzersizIsimler.values())
+                .sort((a, b) => a.localeCompare(b, 'tr-TR'))
+                .forEach(isim => {
+                    const opt = document.createElement('option');
+                    opt.value = isim;
+                    datalist.appendChild(opt);
+                });
+        };
+
+        // Yerel depolama yardımcıları (Firebase henüz girilmediyse veri kaybını önler)
+        function loadLocal() {
+            try {
+                const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+                window.kayitlar = raw ? JSON.parse(raw) : [];
+            } catch (e) { window.kayitlar = []; }
+            window.render();
+        }
+
+        function saveLocal() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(window.kayitlar));
+            window.render();
+        }
+
+        window.openTab = function(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove("active");
+            }
+            const tablinks = document.getElementsByClassName("tablink");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            document.getElementById(tabName).classList.add("active");
+            if (evt) evt.currentTarget.className += " active";
+        };
+
+        window.setTableFilter = function(filter) {
+            window.currentFilter = filter;
+            document.getElementById('btn_hepsi').className = filter === 'Hepsi' ? 'active' : '';
+            document.getElementById('btn_veresiye').className = filter === 'Veresiye' ? 'active' : '';
+            document.getElementById('btn_tahsilat').className = filter === 'Tahsilat' ? 'active' : '';
+            window.render();
+        };
+
+        window.setTimeFilter = function(filter, btnElement) {
+            window.currentTimeFilter = filter;
+            document.querySelectorAll('.filter-buttons button').forEach(b => b.classList.remove('active'));
+            if (btnElement) btnElement.classList.add('active');
+            window.render();
+        };
+
+        window.openOzelAralikModal = function(btnElement) {
+            window.activeTimeBtn = btnElement;
+            document.getElementById('ozelModal').style.display = 'block';
+        };
+
+        window.applyOzelAralik = function() {
+            const b = document.getElementById('ozel_baslangic').value;
+            const e = document.getElementById('ozel_bitis').value;
+            if (!b || !e) return alert("Lütfen iki tarihi de seçin.");
+            
+            const [bYil, bAy, bGun] = b.split('-').map(Number);
+            const [eYil, eAy, eGun] = e.split('-').map(Number);
+            
+            window.ozelStartDate = new Date(bYil, bAy - 1, bGun);
+            window.ozelEndDate = new Date(eYil, eAy - 1, eGun);
+            
+            document.getElementById('ozelModal').style.display = 'none';
+            window.setTimeFilter('Özel', window.activeTimeBtn);
+        };
+
+        window.formatMoney = function(amount) {
+            return amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        window.duzenlemeIptal = function() {
+            window.editId = null;
+            document.getElementById('isim').value = '';
+            document.getElementById('aciklama').value = '';
+            document.getElementById('tutar').value = '';
+            const btnKaydet = document.getElementById('btn_kaydet');
+            btnKaydet.innerText = 'Kaydet';
+            btnKaydet.classList.remove('btn-update');
+            document.getElementById('btn_iptal').style.display = 'none';
+        };
+
+        window.kaydet = async function() {
+            const tarih = document.getElementById('tarih').value;
+            const islem = document.getElementById('islem_tipi').value;
+            const rawIsim = document.getElementById('isim').value;
+            const aciklama = document.getElementById('aciklama').value.trim();
+            const tutar = parseFloat(document.getElementById('tutar').value);
+
+            if (!tarih) return alert("Lütfen geçerli bir tarih seçiniz.");
+            if (!rawIsim || !rawIsim.trim()) return alert("Lütfen kişi ismini giriniz.");
+            if (isNaN(tutar) || tutar <= 0) return alert("Lütfen 0'dan büyük geçerli bir tutar giriniz.");
+
+            const isim = window.resolveCanonicalName(rawIsim);
+            const isimKey = window.normalizeNameKey(isim);
+
+            // Kişinin mevcut toplam veresiye ve tahsilatını hesapla (düzenlenen kaydı hariç tutarak)
+            let kisiVeresiye = 0;
+            let kisiTahsilat = 0;
+            window.kayitlar.forEach(k => {
+                if (window.editId && k.id === window.editId) return;
+                if (window.normalizeNameKey(k.isim) === isimKey) {
+                    if (k.islem === 'Veresiye') kisiVeresiye += k.tutar;
+                    else if (k.islem === 'Tahsilat') kisiTahsilat += k.tutar;
+                }
+            });
+
+            const mevcutBorc = kisiVeresiye - kisiTahsilat;
+
+            // Tahsilat tutarı müşterinin borcundan fazlaysa uyarı ver, onaylarsa kayda izin ver
+            if (islem === 'Tahsilat' && tutar > mevcutBorc + 0.0001) {
+                let uyariMetni = "";
+                if (mevcutBorc <= 0) {
+                    uyariMetni = `⚠️ UYARI: "${isim}" isimli kişinin şu an kayıtlı borcu bulunmuyor (Mevcut Borç: ${window.formatMoney(mevcutBorc)} ₺).\n\nYine de ${window.formatMoney(tutar)} ₺ tahsilat girmek istediğinize emin misiniz?`;
+                } else {
+                    const fazla = tutar - mevcutBorc;
+                    uyariMetni = `⚠️ UYARI: Girilen tahsilat tutarı (${window.formatMoney(tutar)} ₺), "${isim}" isimli kişinin mevcut borcundan (${window.formatMoney(mevcutBorc)} ₺) ${window.formatMoney(fazla)} ₺ daha fazla!\n\nOnaylarsanız müşteri bakiyesi eksiye (alacaklı duruma) düşecektir. Kaydetmek istediğinize emin misiniz?`;
+                }
+                if (!confirm(uyariMetni)) return;
+            } else if (islem === 'Veresiye' && (kisiVeresiye + tutar) < kisiTahsilat - 0.0001) {
+                // Düzenleme sırasında veresiye tutarı düşürülürse ve tahsilatların altında kalırsa
+                const uyariMetni = `⚠️ UYARI: Bu değişiklik sonrası "${isim}" isimli kişinin toplam veresiyesi (${window.formatMoney(kisiVeresiye + tutar)} ₺), toplam tahsilatından (${window.formatMoney(kisiTahsilat)} ₺) daha düşük kalacaktır.\n\nDevam etmek istediğinize emin misiniz?`;
+                if (!confirm(uyariMetni)) return;
+            }
+
+            const data = { tarih, islem, isim, aciklama, tutar, timestamp: new Date().getTime() };
+
+            if (db) {
+                if (window.editId) {
+                    await updateDoc(doc(db, KOLEKSIYON_ADI, window.editId), data);
+                } else {
+                    await addDoc(collection(db, KOLEKSIYON_ADI), data);
+                }
+            } else {
+                if (window.editId) {
+                    const idx = window.kayitlar.findIndex(x => x.id === window.editId);
+                    if (idx !== -1) window.kayitlar[idx] = { id: window.editId, ...data };
+                } else {
+                    window.kayitlar.push({ id: "local_" + Date.now(), ...data });
+                }
+                saveLocal();
+            }
+
+            window.duzenlemeIptal();
+        };
+
+        window.sil = async function(id) {
+            if (!confirm("Bu kaydı silmek istediğinize emin misiniz?")) return;
+            if (window.editId === id) window.duzenlemeIptal();
+
+            if (db) {
+                await deleteDoc(doc(db, KOLEKSIYON_ADI, id));
+            } else {
+                window.kayitlar = window.kayitlar.filter(x => x.id !== id);
+                saveLocal();
+            }
+        };
+
+        window.duzenle = function(id) {
+            const k = window.kayitlar.find(x => x.id === id);
+            if (k) {
+                document.getElementById('tarih').value = k.tarih;
+                document.getElementById('islem_tipi').value = k.islem;
+                document.getElementById('isim').value = window.formatDisplayName(k.isim);
+                document.getElementById('aciklama').value = k.aciklama || '';
+                document.getElementById('tutar').value = k.tutar;
+                window.editId = id;
+
+                const btnKaydet = document.getElementById('btn_kaydet');
+                btnKaydet.innerText = 'Güncelle';
+                btnKaydet.classList.add('btn-update');
+                document.getElementById('btn_iptal').style.display = 'inline-block';
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        window.render = function() {
+            window.updateIsimListesi();
+
+            const tbody = document.getElementById('kayit_govdesi');
+            tbody.innerHTML = '';
+            let toplamVeresiye = 0;
+            let toplamTahsilat = 0;
+            let gosterilecekler = [...window.kayitlar];
+
+            const bugun = new Date();
+            const bugunYil = bugun.getFullYear();
+            const bugunAy = bugun.getMonth();
+            const bugunGun = bugun.getDate();
+            let tarihMetni = "Tüm Zamanlar Gösteriliyor";
+
+            if (window.currentTimeFilter !== 'Tümü') {
+                gosterilecekler = gosterilecekler.filter(k => {
+                    if (!k.tarih) return false;
+                    const [yil, ay, gun] = k.tarih.split('-').map(Number);
+                    const kayitTarihi = new Date(yil, ay - 1, gun);
+                    
+                    if (window.currentTimeFilter === 'Günlük') {
+                        tarihMetni = "Bugünün Kayıtları Gösteriliyor";
+                        return yil === bugunYil && (ay - 1) === bugunAy && gun === bugunGun;
+                    } 
+                    else if (window.currentTimeFilter === 'Haftalık') {
+                        const bugunBaslangic = new Date(bugunYil, bugunAy, bugunGun);
+                        const diffTime = bugunBaslangic - kayitTarihi;
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        tarihMetni = "Son 7 Gün Gösteriliyor";
+                        return diffDays >= 0 && diffDays <= 7;
+                    } 
+                    else if (window.currentTimeFilter === 'Aylık') {
+                        tarihMetni = "Bu Ayın Kayıtları Gösteriliyor";
+                        return yil === bugunYil && (ay - 1) === bugunAy;
+                    } 
+                    else if (window.currentTimeFilter === 'Yıllık') {
+                        tarihMetni = "Bu Yılın Kayıtları Gösteriliyor";
+                        return yil === bugunYil;
+                    } 
+                    else if (window.currentTimeFilter === 'Özel') {
+                        tarihMetni = "Özel Tarih Aralığı Gösteriliyor";
+                        return kayitTarihi >= window.ozelStartDate && kayitTarihi <= window.ozelEndDate;
+                    }
+                    return true;
+                });
+            }
+            document.getElementById('aktif_tarih_metni').innerText = tarihMetni;
+
+            // Kişi bazlı gruplama (Büyük/küçük harf duyarsız tek anahtar altında)
+            const kisiGruplari = {};
+
+            gosterilecekler.forEach(k => {
+                if (k.islem === 'Veresiye') toplamVeresiye += k.tutar;
+                else if (k.islem === 'Tahsilat') toplamTahsilat += k.tutar;
+
+                const key = window.normalizeNameKey(k.isim);
+                if (!kisiGruplari[key]) {
+                    kisiGruplari[key] = {
+                        displayName: window.formatDisplayName(k.isim),
+                        veresiye: 0,
+                        tahsilat: 0,
+                        islemler: []
+                    };
+                }
+                if (k.islem === 'Veresiye') kisiGruplari[key].veresiye += k.tutar;
+                else if (k.islem === 'Tahsilat') kisiGruplari[key].tahsilat += k.tutar;
+
+                kisiGruplari[key].islemler.push(k);
+            });
+
+            // 1. Genel Kayıtlar Tablosunu Doldur
+            let tabloKayitlari = [...gosterilecekler];
+            if (window.currentFilter !== 'Hepsi') {
+                tabloKayitlari = tabloKayitlari.filter(k => k.islem === window.currentFilter);
+            }
+            tabloKayitlari.sort((a, b) => {
+                const dateDiff = new Date(b.tarih) - new Date(a.tarih);
+                if (dateDiff !== 0) return dateDiff;
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            });
+
+            if (tabloKayitlari.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="color:#888; padding:15px;">Gösterilecek kayıt bulunamadı.</td></tr>';
+            } else {
+                tabloKayitlari.forEach(k => {
+                    const tr = document.createElement('tr');
+                    const islemColor = k.islem === 'Veresiye' ? 'color: #cc0000;' : 'color: #008000;';
+                    tr.innerHTML = `
+                        <td style="white-space:nowrap;">${k.tarih}</td>
+                        <td style="${islemColor} font-weight:bold;">${k.islem}</td>
+                        <td style="font-weight:600;">${window.formatDisplayName(k.isim)}</td>
+                        <td style="text-align:left;">${k.aciklama || '-'}</td>
+                        <td style="white-space:nowrap; font-weight:bold;">${window.formatMoney(k.tutar)} ₺</td>
+                        <td style="white-space:nowrap;">
+                            <button class="action-btn" onclick="duzenle('${k.id}')">Düzenle</button>
+                            <button class="action-btn del" onclick="sil('${k.id}')">Sil</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // 2. Kişi Bazlı Kayıtlar (Detaylı) Sekmesini Doldur
+            const kisiAlani = document.getElementById('kisi_gruplari_alani');
+            kisiAlani.innerHTML = '';
+            const aramaMetni = window.normalizeNameKey(document.getElementById('kisi_filtre_input')?.value || '');
+
+            const siraliKisiler = Object.values(kisiGruplari)
+                .filter(g => !aramaMetni || window.normalizeNameKey(g.displayName).includes(aramaMetni))
+                .sort((a, b) => a.displayName.localeCompare(b.displayName, 'tr-TR'));
+
+            if (siraliKisiler.length === 0) {
+                kisiAlani.innerHTML = '<p style="color:#888; text-align:center; padding: 20px;">Bu filtreye uygun kişi kaydı bulunmuyor.</p>';
+            } else {
+                siraliKisiler.forEach(grup => {
+                    const kalan = grup.veresiye - grup.tahsilat;
+                    let kalanRenk = '';
+                    if (kalan > 0) kalanRenk = 'text-red';
+                    else if (kalan < 0) kalanRenk = 'text-blue';
+                    else kalanRenk = 'text-green';
+
+                    const catDiv = document.createElement('div');
+                    catDiv.className = 'kisi-kategori';
+
+                    catDiv.innerHTML = `
+                        <div class="kisi-kategori-header">
+                            <h3>${grup.displayName}</h3>
+                            <span class="kisi-ozet-etiket">
+                                Veresiye: <strong class="text-red">${window.formatMoney(grup.veresiye)} ₺</strong> | 
+                                Tahsilat: <strong class="text-green">${window.formatMoney(grup.tahsilat)} ₺</strong>
+                            </span>
+                        </div>
+                    `;
+
+                    // Kişinin işlemlerini tarihe göre sırala
+                    const kisiIslemleri = [...grup.islemler].sort((a, b) => {
+                        const d = new Date(b.tarih) - new Date(a.tarih);
+                        return d !== 0 ? d : (b.timestamp || 0) - (a.timestamp || 0);
+                    });
+
+                    kisiIslemleri.forEach(item => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'kisi-islem-item';
+                        const badgeClass = item.islem === 'Veresiye' ? 'tip-veresiye' : 'tip-tahsilat';
+                        const tutarClass = item.islem === 'Veresiye' ? 'text-red' : 'text-green';
+
+                        itemDiv.innerHTML = `
+                            <div>
+                                <span class="tarih-badge">${item.tarih}</span>
+                                <span class="tip-badge ${badgeClass}">${item.islem}</span>
+                                <span>${item.aciklama ? item.aciklama : '<em style="color:#888;">Açıklama yok</em>'}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="${tutarClass}">${window.formatMoney(item.tutar)} ₺</span>
+                                <button class="action-btn" onclick="duzenle('${item.id}')">Düzenle</button>
+                                <button class="action-btn del" onclick="sil('${item.id}')">Sil</button>
+                            </div>
+                        `;
+                        catDiv.appendChild(itemDiv);
+                    });
+
+                    const totalDiv = document.createElement('div');
+                    totalDiv.className = 'kisi-toplam';
+                    totalDiv.innerHTML = `
+                        <span>Toplam İşlem: ${kisiIslemleri.length} adet</span>
+                        <span>Kalan Alacak: <span class="${kalanRenk}">${window.formatMoney(kalan)} ₺</span></span>
+                    `;
+                    catDiv.appendChild(totalDiv);
+
+                    kisiAlani.appendChild(catDiv);
+                });
+            }
+
+            // 3. Sağ Özet Panelini Güncelle
+            document.getElementById('toplam_veresiye').innerText = window.formatMoney(toplamVeresiye) + ' ₺';
+            document.getElementById('toplam_tahsilat').innerText = window.formatMoney(toplamTahsilat) + ' ₺';
+            
+            const kalanAlacak = toplamVeresiye - toplamTahsilat;
+            const kalanEl = document.getElementById('kalan_alacak');
+            kalanEl.innerText = window.formatMoney(kalanAlacak) + ' ₺';
+            if (kalanAlacak > 0) kalanEl.className = 'text-red';
+            else if (kalanAlacak < 0) kalanEl.className = 'text-blue';
+            else kalanEl.className = 'text-green';
+
+            // Sağ paneldeki kişi bazlı kalan alacak listesi
+            const kisiDetaylari = document.getElementById('kisi_detaylari');
+            kisiDetaylari.innerHTML = '';
+
+            const ozetKisiler = Object.values(kisiGruplari).sort((a, b) => {
+                const alacakA = a.veresiye - a.tahsilat;
+                const alacakB = b.veresiye - b.tahsilat;
+                return alacakB - alacakA;
+            });
+
+            if (ozetKisiler.length === 0) {
+                kisiDetaylari.innerHTML = '<div style="color:#888; font-size:12px;">Kayıt bulunmuyor.</div>';
+            } else {
+                ozetKisiler.forEach(g => {
+                    const kisiKalan = g.veresiye - g.tahsilat;
+                    let renk = '';
+                    if (kisiKalan > 0) renk = 'text-red';
+                    else if (kisiKalan < 0) renk = 'text-blue';
+                    else renk = 'text-green';
+
+                    const div = document.createElement('div');
+                    div.className = 'summary-item';
+                    div.innerHTML = `<span>${g.displayName}</span> <strong class="${renk}">${window.formatMoney(kisiKalan)} ₺</strong>`;
+                    kisiDetaylari.appendChild(div);
+                });
+            }
+        };
+
+        window.onload = function() {
+            // Yerel saate göre bugünün tarihini ata
+            const now = new Date();
+            const localDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            document.getElementById('tarih').value = localDate;
+
+            if (db) {
+                const q = query(collection(db, KOLEKSIYON_ADI));
+                onSnapshot(q, (snapshot) => {
+                    window.kayitlar = [];
+                    snapshot.forEach((docSnap) => {
+                        window.kayitlar.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    window.render();
+                });
+            } else {
+                loadLocal();
+            }
+        };
+    </script>
+</body>
+</html>
