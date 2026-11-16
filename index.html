@@ -159,7 +159,11 @@
         </div>
         <input type="number" id="tutar" placeholder="Tutar (₺)" step="0.01" min="0" style="width: 110px;">
         <input type="text" id="aciklama" placeholder="Açıklama / Not" style="width: 240px;">
-        <input type="text" id="sofor" placeholder="Şoför" style="width: 150px;">
+        <select id="sofor">
+            <option value="Vecdi" selected>Vecdi</option>
+            <option value="Cengiz">Cengiz</option>
+            <option value="Nuri">Nuri</option>
+        </select>
         <button id="btn_kaydet" onclick="kaydet()">Kaydet</button>
         <button id="btn_iptal" class="btn-cancel" onclick="duzenlemeIptal()" style="display: none;">Vazgeç</button>
     </div>
@@ -570,7 +574,7 @@
             window.editId = null;
             document.getElementById('isim').value = '';
             document.getElementById('aciklama').value = '';
-            document.getElementById('sofor').value = '';
+            document.getElementById('sofor').value = 'Vecdi';
             document.getElementById('tutar').value = '';
             document.getElementById('isim_oneriler').style.display = 'none';
             const btnKaydet = document.getElementById('btn_kaydet');
@@ -660,7 +664,7 @@
                 document.getElementById('islem_tipi').value = k.islem;
                 document.getElementById('isim').value = window.formatDisplayName(k.isim);
                 document.getElementById('aciklama').value = k.aciklama || '';
-                document.getElementById('sofor').value = k.sofor || '';
+                document.getElementById('sofor').value = k.sofor || 'Vecdi';
                 document.getElementById('tutar').value = k.tutar;
                 document.getElementById('isim_oneriler').style.display = 'none';
                 window.editId = id;
