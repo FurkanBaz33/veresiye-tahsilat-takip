@@ -157,7 +157,7 @@
             <input type="text" id="isim" placeholder="İsim" autocomplete="off">
             <div id="isim_oneriler" class="autocomplete-list"></div>
         </div>
-        <input type="number" id="tutar" placeholder="Tutar (₺)" step="0.01" min="0" style="width: 110px;">
+        <input type="text" id="tutar" inputmode="decimal" placeholder="Tutar (₺)" style="width: 110px;">
         <input type="text" id="aciklama" placeholder="Açıklama / Not" style="width: 240px;">
         <select id="sofor">
             <option value="Vecdi" selected>Vecdi</option>
@@ -589,7 +589,8 @@
             const rawIsim = document.getElementById('isim').value;
             const aciklama = document.getElementById('aciklama').value.trim();
             const sofor = document.getElementById('sofor').value.trim();
-            const tutar = parseFloat(document.getElementById('tutar').value);
+            const rawTutar = document.getElementById('tutar').value.trim().replace(',', '.');
+            const tutar = parseFloat(rawTutar);
 
             if (!tarih) return alert("Lütfen geçerli bir tarih seçiniz.");
             if (!rawIsim || !rawIsim.trim()) return alert("Lütfen kişi ismini giriniz.");
