@@ -159,6 +159,7 @@
         </div>
         <input type="number" id="tutar" placeholder="Tutar (₺)" step="0.01" min="0" style="width: 110px;">
         <input type="text" id="aciklama" placeholder="Açıklama / Not" style="width: 240px;">
+        <input type="text" id="sofor" placeholder="Şoför" style="width: 150px;">
         <button id="btn_kaydet" onclick="kaydet()">Kaydet</button>
         <button id="btn_iptal" class="btn-cancel" onclick="duzenlemeIptal()" style="display: none;">Vazgeç</button>
     </div>
@@ -186,6 +187,7 @@
                                 <th>İsim</th>
                                 <th>Tutar (₺)</th>
                                 <th>Açıklama</th>
+                                <th>Şoför</th>
                                 <th>İşlem</th>
                             </tr>
                         </thead>
@@ -568,6 +570,7 @@
             window.editId = null;
             document.getElementById('isim').value = '';
             document.getElementById('aciklama').value = '';
+            document.getElementById('sofor').value = '';
             document.getElementById('tutar').value = '';
             document.getElementById('isim_oneriler').style.display = 'none';
             const btnKaydet = document.getElementById('btn_kaydet');
@@ -581,6 +584,7 @@
             const islem = document.getElementById('islem_tipi').value;
             const rawIsim = document.getElementById('isim').value;
             const aciklama = document.getElementById('aciklama').value.trim();
+            const sofor = document.getElementById('sofor').value.trim();
             const tutar = parseFloat(document.getElementById('tutar').value);
 
             if (!tarih) return alert("Lütfen geçerli bir tarih seçiniz.");
@@ -616,7 +620,7 @@
                 if (!confirm(uyariMetni)) return;
             }
 
-            const data = { tarih, islem, isim, aciklama, tutar, timestamp: new Date().getTime() };
+            const data = { tarih, islem, isim, aciklama, sofor, tutar, timestamp: new Date().getTime() };
 
             if (db) {
                 if (window.editId) {
@@ -656,6 +660,7 @@
                 document.getElementById('islem_tipi').value = k.islem;
                 document.getElementById('isim').value = window.formatDisplayName(k.isim);
                 document.getElementById('aciklama').value = k.aciklama || '';
+                document.getElementById('sofor').value = k.sofor || '';
                 document.getElementById('tutar').value = k.tutar;
                 document.getElementById('isim_oneriler').style.display = 'none';
                 window.editId = id;
@@ -749,7 +754,7 @@
             });
 
             if (tabloKayitlari.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="color:#888; padding:15px;">Gösterilecek kayıt bulunamadı.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="color:#888; padding:15px;">Gösterilecek kayıt bulunamadı.</td></tr>';
             } else {
                 tabloKayitlari.forEach(k => {
                     const tr = document.createElement('tr');
@@ -760,6 +765,7 @@
                         <td style="font-weight:600;">${escapeHtml(window.formatDisplayName(k.isim))}</td>
                         <td style="white-space:nowrap; font-weight:bold;">${window.formatMoney(k.tutar)} ₺</td>
                         <td style="text-align:left;">${escapeHtml(k.aciklama || '-')}</td>
+                        <td>${escapeHtml(k.sofor || '-')}</td>
                         <td style="white-space:nowrap;">
                             <button class="action-btn" onclick="duzenle('${k.id}')">Düzenle</button>
                             <button class="action-btn del" onclick="sil('${k.id}')">Sil</button>
@@ -818,6 +824,7 @@
                                 <span class="tip-badge ${badgeClass}">${escapeHtml(item.islem)}</span>
                                 <strong class="${tutarClass}" style="margin-right:8px;">${window.formatMoney(item.tutar)} ₺</strong>
                                 <span>${item.aciklama ? escapeHtml(item.aciklama) : '<em style="color:#888;">Açıklama yok</em>'}</span>
+                                ${item.sofor ? `<span class="tarih-badge" style="margin-left:6px; background:#e7f1ff; color:#004085;">Şoför: ${escapeHtml(item.sofor)}</span>` : ''}
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <button class="action-btn" onclick="duzenle('${item.id}')">Düzenle</button>
