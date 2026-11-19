@@ -75,6 +75,7 @@
         .action-btn:hover { background-color: #ddd; }
         .action-btn.del:hover { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
         .text-green { color: #008000; font-weight: bold; }
+        tr.tahsilat-satiri { background-color: #e9f9ee; color: #006600; }
         .text-red { color: #cc0000; font-weight: bold; }
         .text-blue { color: #0056b3; font-weight: bold; }
         .table-filters { margin-bottom: 10px; display: flex; gap: 4px; flex-wrap: wrap; }
@@ -764,6 +765,7 @@
                 tabloKayitlari.forEach(k => {
                     const tr = document.createElement('tr');
                     const islemColor = k.islem === 'Veresiye' ? 'color: #cc0000;' : 'color: #008000;';
+                    if (k.islem === 'Tahsilat') tr.className = 'tahsilat-satiri';
                     tr.innerHTML = `
                         <td style="white-space:nowrap;">${escapeHtml(k.tarih)}</td>
                         <td style="${islemColor} font-weight:bold;">${escapeHtml(k.islem)}</td>
@@ -820,6 +822,7 @@
                     kisiIslemleri.forEach(item => {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = 'kisi-islem-item';
+                        if (item.islem === 'Tahsilat') itemDiv.style.backgroundColor = '#e9f9ee';
                         const badgeClass = item.islem === 'Veresiye' ? 'tip-veresiye' : 'tip-tahsilat';
                         const tutarClass = item.islem === 'Veresiye' ? 'text-red' : 'text-green';
 
